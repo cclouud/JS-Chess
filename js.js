@@ -51,6 +51,9 @@ let endTurnBtn = null
 let endTurnBtnMobile = null
 let isPromoting = false
 let gameOver = false
+let aiEnabled = false
+const aiColor = 'black'
+const aiDelayMs = 400
 
 function initGame() {
     tab = document.getElementById("tablero")
@@ -60,6 +63,7 @@ function initGame() {
     const cb = document.getElementById('captured-by-black')
     const btn = document.getElementById('end-turn')
     const btnm = document.getElementById('end-turn-mobile')
+    const toggleAi = document.getElementById('toggle-ai')
 
     if (tw) timerElems.white = tw
     if (tb) timerElems.black = tb
@@ -77,6 +81,15 @@ function initGame() {
         endTurnBtnMobile.addEventListener('click', () => {
             clearSelection()
             switchTurn()
+        })
+    }
+
+    if (toggleAi) {
+        toggleAi.addEventListener('change', (e) => {
+            aiEnabled = !!e.target.checked
+            if (aiEnabled && currentTurn === aiColor && !gameOver && !isPromoting) {
+                scheduleAIMove()
+            }
         })
     }
 
@@ -98,6 +111,10 @@ function startTurn(color) {
     }, 1000)
     if (endTurnBtn) endTurnBtn.disabled = false
     if (endTurnBtnMobile) endTurnBtnMobile.disabled = false
+
+    if (aiEnabled && currentTurn === aiColor && !gameOver && !isPromoting) {
+        scheduleAIMove()
+    }
 }
 
 function formatTime(totalSeconds) {
@@ -472,6 +489,145 @@ function isValidMove(startCell, targetCell) {
     }
     
     return isValid;
+}
+
+// =============== IA (negras) ===============
+function isValidMoveForPiece(startCell, targetCell, pieceInfo) {
+    const start = getPosition(startCell)
+    const end = getPosition(targetCell)
+
+    const targetPieceImg = targetCell.querySelector('img')
+    if (targetPieceImg) {
+        const targetInfo = getPieceInfo(targetPieceImg)
+        if (targetInfo.color === pieceInfo.color) return false
+    }
+
+    let valid = false
+    switch (pieceInfo.type) {
+        case 'Pawn':
+            valid = isValidPawnMove(start, end, pieceInfo)
+            break
+        case 'Rook':
+            valid = isValidRookMove(start, end)
+            if (valid) valid = isPathClear(start, end)
+            break
+        case 'Knight':
+            valid = isValidKnightMove(start, end)
+            break
+        case 'Bishop':
+            valid = isValidBishopMove(start, end)
+            if (valid) valid = isPathClear(start, end)
+            break
+        case 'Queen':
+            valid = isValidQueenMove(start, end)
+            if (valid) valid = isPathClear(start, end)
+            break
+        case 'King':
+            valid = isValidKingMove(start, end)
+            break
+    }
+    return valid
+}
+
+function pieceCaptureValue(type) {
+    switch (type) {
+        case 'Pawn': return 1
+        case 'Knight': return 3
+        case 'Bishop': return 3
+        case 'Rook': return 5
+        case 'Queen': return 9
+        case 'King': return 100
+        default: return 0
+    }
+}
+
+function getAllCells() {
+    const cells = []
+    for (let i = 0; i < tab.children.length; i++) {
+        const c = tab.children[i]
+        if (c && c.tagName === 'DIV') cells.push(c)
+    }
+    return cells
+}
+
+function getLegalMovesForColor(color) {
+    const cells = getAllCells()
+    const moves = []
+    for (const cell of cells) {
+        const img = cell.querySelector('img')
+        if (!img) continue
+        const info = getPieceInfo(img)
+        if (info.color !== color) continue
+        for (const target of cells) {
+            if (target === cell) continue
+            if (!isValidMoveForPiece(cell, target, info)) continue
+            const targetImg = target.querySelector('img')
+            const capVal = targetImg ? pieceCaptureValue(getPieceInfo(targetImg).type) : 0
+            moves.push({ fromCell: cell, toCell: target, captureValue: capVal })
+        }
+    }
+    return moves
+}
+
+function pickAIMove(color) {
+    const legal = getLegalMovesForColor(color)
+    if (legal.length === 0) return null
+    let bestCap = Math.max(...legal.map(m => m.captureValue))
+    const candidates = bestCap > 0 ? legal.filter(m => m.captureValue === bestCap) : legal
+    const idx = Math.floor(Math.random() * candidates.length)
+    return candidates[idx]
+}
+
+function executeAIMove(move) {
+    if (!move || gameOver) return
+    const sourceCell = move.fromCell
+    const targetCell = move.toCell
+    const movingImg = sourceCell.querySelector('img')
+    if (!movingImg) return
+
+    clearSelection()
+
+    const targetImg = targetCell.querySelector('img')
+    if (targetImg) {
+        const targetInfo = getPieceInfo(targetImg)
+        addCapturedPiece(targetImg, aiColor)
+        targetCell.innerHTML = ''
+        if (targetInfo.type === 'King') {
+            targetCell.appendChild(movingImg)
+            clearSelection()
+            endGame(aiColor)
+            return
+        }
+    }
+
+    targetCell.appendChild(movingImg)
+
+    const movedInfo = getPieceInfo(movingImg)
+    const [endRow] = getPosition(targetCell)
+    const reachedBackRank = (movedInfo.color === 'white' && endRow === 8) || (movedInfo.color === 'black' && endRow === 1)
+    if (movedInfo.type === 'Pawn' && reachedBackRank) {
+        movingImg.src = getPieceAssetSrc('Queen', movedInfo.color)
+        // asegurar handler
+        movingImg.replaceWith(movingImg.cloneNode(true))
+        const newImg = targetCell.querySelector('img')
+        if (newImg) newImg.addEventListener('click', handlePieceClick)
+    }
+
+    clearSelection()
+    switchTurn()
+}
+
+function scheduleAIMove() {
+    setTimeout(() => {
+        if (!aiEnabled || gameOver || isPromoting || currentTurn !== aiColor) return
+        const move = pickAIMove(aiColor)
+        if (!move) {
+            // sin movimientos válidos, ceder turno
+            switchTurn()
+            return
+        }
+        executeAIMove(move)
+    }, aiDelayMs)
 }
 
 document.addEventListener("DOMContentLoaded", () => {
