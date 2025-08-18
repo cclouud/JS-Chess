@@ -37,14 +37,159 @@ const initPos = [
     [pieces.rookW, pieces.knightW, pieces.bishopW, pieces.queenW, pieces.kingW, pieces.bishopW, pieces.knightW, pieces.rookW]  
 ]
 
-const tab = document.getElementById("tablero")
+let tab = null
+
+// Estado del juego y UI
+let currentTurn = 'white'
+let selectedPiece = null;
+let selectedCell = null;
+let timerInterval = null
+let remainingSeconds = 120
+let timerElems = { white: null, black: null }
+let capturedElems = { white: null, black: null }
+let endTurnBtn = null
+let isPromoting = false
+let gameOver = false
+
+function initGame() {
+    tab = document.getElementById("tablero")
+    const tw = document.getElementById('timer-white')
+    const tb = document.getElementById('timer-black')
+    const cw = document.getElementById('captured-by-white')
+    const cb = document.getElementById('captured-by-black')
+    const btn = document.getElementById('end-turn')
+
+    if (tw) timerElems.white = tw
+    if (tb) timerElems.black = tb
+    if (cw) capturedElems.white = cw
+    if (cb) capturedElems.black = cb
+    if (btn) {
+        endTurnBtn = btn
+        endTurnBtn.addEventListener('click', () => {
+            clearSelection()
+            switchTurn()
+        })
+    }
+
+    // Inicia turno de blancas
+    startTurn('white')
+}
+
+function startTurn(color) {
+    currentTurn = color
+    remainingSeconds = 120
+    updateTimersDisplay()
+    if (timerInterval) clearInterval(timerInterval)
+    timerInterval = setInterval(() => {
+        remainingSeconds--
+        updateTimersDisplay()
+        if (remainingSeconds <= 0) {
+            switchTurn()
+        }
+    }, 1000)
+    if (endTurnBtn) endTurnBtn.disabled = false
+}
+
+function formatTime(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60)
+    const s = totalSeconds % 60
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+function updateTimersDisplay() {
+    if (!timerElems.white || !timerElems.black) return
+    if (currentTurn === 'white') {
+        timerElems.white.textContent = formatTime(remainingSeconds)
+        timerElems.black.textContent = '02:00'
+    } else {
+        timerElems.black.textContent = formatTime(remainingSeconds)
+        timerElems.white.textContent = '02:00'
+    }
+}
+
+function switchTurn() {
+    if (timerInterval) clearInterval(timerInterval)
+    currentTurn = currentTurn === 'white' ? 'black' : 'white'
+    remainingSeconds = 120
+    updateTimersDisplay()
+    startTurn(currentTurn)
+}
+
+function clearSelection() {
+    if (selectedCell) {
+        selectedCell.style.backgroundColor = ''
+    }
+    selectedPiece = null
+    selectedCell = null
+}
+
+function addCapturedPiece(imgElem, byColor) {
+    const clone = imgElem.cloneNode(false)
+    clone.removeAttribute('draggable')
+    const container = byColor === 'white' ? capturedElems.white : capturedElems.black
+    if (container) container.appendChild(clone)
+}
+
+function endGame(winnerColor) {
+    if (timerInterval) clearInterval(timerInterval)
+    gameOver = true
+    if (endTurnBtn) endTurnBtn.disabled = true
+    alert(`Ganan ${winnerColor === 'white' ? 'blancas' : 'negras'}`)
+}
+
+function getPieceAssetSrc(type, color) {
+    const colorCode = color === 'white' ? 'W' : 'B'
+    return `img/${type}${colorCode}.svg`
+}
+
+function showPromotionModal(color, onPick) {
+    const modal = document.getElementById('promotion-modal')
+    if (!modal) { onPick && onPick('Queen'); return }
+    const setSrc = (id, type) => {
+        const el = document.getElementById(id)
+        if (el) {
+            el.src = getPieceAssetSrc(type, color)
+        }
+    }
+    setSrc('promo-queen', 'Queen')
+    setSrc('promo-rook', 'Rook')
+    setSrc('promo-bishop', 'Bishop')
+    setSrc('promo-knight', 'Knight')
+
+    const cleanup = () => {
+        ;['promo-queen','promo-rook','promo-bishop','promo-knight'].forEach(id => {
+            const el = document.getElementById(id)
+            if (el) {
+                el.replaceWith(el.cloneNode(true))
+            }
+        })
+    }
+
+    const attach = (id, type) => {
+        const el = document.getElementById(id)
+        if (!el) return
+        el.addEventListener('click', () => {
+            modal.classList.add('hidden')
+            isPromoting = false
+            cleanup()
+            onPick && onPick(type)
+        }, { once: true })
+    }
+
+    isPromoting = true
+    modal.classList.remove('hidden')
+    attach('promo-queen', 'Queen')
+    attach('promo-rook', 'Rook')
+    attach('promo-bishop', 'Bishop')
+    attach('promo-knight', 'Knight')
+}
 
 function colocarPiezas() {
     for (let fila = 0; fila < initPos.length; fila++) {
         for (let col = 0; col < initPos[fila].length; col++) {
             const pieza = initPos[fila][col]; 
             const indice = fila * 8 + col; 
-            const celda = tablero.children[indice];
+            const celda = tab.children[indice];
 
             if (pieza) {
                 const obj = Object.entries(pieces).find(([key, value]) => value == pieza)
@@ -58,17 +203,29 @@ function colocarPiezas() {
     }   
 }
 
-let selectedPiece = null;
-let selectedCell = null;
 
 function handlePieceClick(event) {
+    if (gameOver || isPromoting) return
     event.stopPropagation();
     const clickedPiece = event.target;
     const cell = clickedPiece.parentElement;
-
+    const info = getPieceInfo(clickedPiece)
     if (selectedPiece) {
+        const selectedInfo = getPieceInfo(selectedPiece)
+        if (info.color === selectedInfo.color) {
+            if (selectedCell) selectedCell.style.backgroundColor = ''
+            selectedPiece = clickedPiece
+            selectedCell = cell
+            cell.style.backgroundColor = '#ffffaa'
+            return
+        }
+        // Pieza enemiga: intentar capturar
         handleCellClick(event);
         return;
+    }
+    // Sin pieza seleccionada, solo permitir seleccionar si es del turno actual
+    if (info.color !== currentTurn) {
+        return
     }
 
     if (selectedCell) {
@@ -81,25 +238,59 @@ function handlePieceClick(event) {
 }
 
 function handleCellClick(event) {
+    if (gameOver || isPromoting) return
     const targetCell = event.target.tagName === 'IMG' ? event.target.parentElement : event.target;
 
     if (!selectedPiece) {
         return;
+    }
+    const movingInfo = getPieceInfo(selectedPiece)
+    if (movingInfo.color !== currentTurn) {
+        return
     }
 
     if (selectedPiece && targetCell.tagName === "DIV") {
         const sourceCell = selectedCell;
 
         if (isValidMove(sourceCell, targetCell)) {
-            if (targetCell.querySelector('img')) {
-                targetCell.innerHTML = '';
+            const targetImg = targetCell.querySelector('img')
+            if (targetImg) {
+                const info = getPieceInfo(targetImg)
+                addCapturedPiece(targetImg, currentTurn)
+                targetCell.innerHTML = ''
+                if (info.type === 'King') {
+                    targetCell.appendChild(selectedPiece)
+                    clearSelection()
+                    endGame(currentTurn)
+                    return
+                }
             }
             targetCell.appendChild(selectedPiece);
+
+            // Promoción de peón
+            const movedInfo = getPieceInfo(selectedPiece)
+            const [endRow] = getPosition(targetCell)
+            const reachedBackRank = (movedInfo.color === 'white' && endRow === 8) || (movedInfo.color === 'black' && endRow === 1)
+            if (movedInfo.type === 'Pawn' && reachedBackRank) {
+                showPromotionModal(movedInfo.color, (typePicked) => {
+                    const img = targetCell.querySelector('img')
+                    if (img) {
+                        img.src = getPieceAssetSrc(typePicked, movedInfo.color)
+                        // Asegurar handler de click
+                        img.replaceWith(img.cloneNode(true))
+                        const newImg = targetCell.querySelector('img')
+                        if (newImg) newImg.addEventListener('click', handlePieceClick)
+                    }
+                    clearSelection()
+                    switchTurn()
+                })
+            } else {
+                clearSelection()
+                switchTurn()
+            }
         }
 
-        selectedCell.style.backgroundColor = '';
-        selectedPiece = null;
-        selectedCell = null;
+        clearSelection()
     }
 }
 
@@ -117,8 +308,9 @@ function getCellId(row, col) {
 function getPieceInfo(img) {
     const src = img.src;
     const filename = src.split('/').pop();
-    const type = filename.slice(0, -5);
-    const color = filename.includes('B.svg') ? 'black' : 'white';
+    const base = filename.replace('.svg', '')
+    const color = base.endsWith('B') ? 'black' : 'white'
+    const type = base.replace(/[BW]$/, '')
     
     return {
         type: type,
@@ -271,6 +463,10 @@ function isValidMove(startCell, targetCell) {
     return isValid;
 }
 
-document.addEventListener("DOMContentLoaded", crearTab(), colocarPiezas());
+document.addEventListener("DOMContentLoaded", () => {
+    crearTab();
+    initGame();
+    colocarPiezas();
+});
 
 

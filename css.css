@@ -23,16 +23,17 @@ h1 {
     position: relative;
     text-align: center;
     margin: auto;
-    padding: 2.5% 20%;
+    padding: 2.5% 2.5%;
     width: fit-content;
     height: 90%;
     background-color: #28283d;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+    gap: 32px;
 }
 
 .tab {
-    width: 100%;
-    height: 100%;
+    width: 40vw;
+    height: 40vw;
     display: grid;
     grid-template-columns: repeat(8, 5vw);
     grid-template-rows: repeat(8, 5vw);
@@ -57,4 +58,98 @@ img {
     z-index: 2;
     width: 100%;
     height: 100%;
+}
+
+.side {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 22px;
+    padding: 16px;
+    width: 12vw;
+}
+
+.player-title {
+    font-weight: bold;
+}
+
+.timer {
+    font-family: monospace;
+    font-size: 1.5rem;
+    background: #1e1e2e;
+    border: 1px solid #5a5a7a;
+    padding: 10px 12px;
+    border-radius: 6px;
+    width: 100%;
+}
+
+.captured {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    min-height: 120px;
+    background: #1e1e2e;
+    border: 1px solid #5a5a7a;
+    border-radius: 6px;
+    padding: 12px;
+    width: 100%;
+}
+
+.captured img {
+    width: 100%;
+    height: auto;
+    filter: none;
+}
+
+.end-turn {
+    margin-top: auto;
+    background: #3b3b5a;
+    color: #fff;
+    border: 1px solid #5a5a7a;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.end-turn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.promotion-modal.hidden { display: none; }
+.promotion-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.promotion-content {
+    background: #28283d;
+    border: 1px solid #5a5a7a;
+    border-radius: 10px;
+    padding: 16px;
+    min-width: 280px;
+}
+.promotion-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.promotion-choices {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+.promo-choice {
+    background: #1e1e2e;
+    border: 1px solid #5a5a7a;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+}
+.promo-choice:hover {
+    outline: 2px solid #ffffaa;
 }

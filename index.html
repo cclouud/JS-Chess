@@ -9,8 +9,31 @@
 <body>
         <h1>Chess</h1>
     <div class="centro">
+        <div class="side left">
+            <div class="player-title">Jugador Blanco</div>
+            <div class="timer" id="timer-white">02:00</div>
+            <div class="captured" id="captured-by-white"></div>
+            <button id="end-turn" class="end-turn">Terminar turno</button>
+        </div>
         <div class="tab" id="tablero">
 
+        </div>
+        <div class="side right">
+            <div class="player-title">Jugador Negro</div>
+            <div class="timer" id="timer-black">02:00</div>
+            <div class="captured" id="captured-by-black"></div>
+        </div>
+    </div>
+    
+    <div id="promotion-modal" class="promotion-modal hidden">
+        <div class="promotion-content">
+            <div class="promotion-title">Promocionar peón</div>
+            <div class="promotion-choices">
+                <img id="promo-queen" class="promo-choice" alt="Reina">
+                <img id="promo-rook" class="promo-choice" alt="Torre">
+                <img id="promo-bishop" class="promo-choice" alt="Alfil">
+                <img id="promo-knight" class="promo-choice" alt="Caballo">
+            </div>
         </div>
     </div>
     
