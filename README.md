@@ -5,5 +5,4 @@ A chess game built with **JavaScript**. This project is currently in development
 ## 🚀 Features (Planned & Implemented)  
 ✅ Interactive chessboard  
 ✅ Valid piece movements  
-🔄 AI opponent (coming soon)  
-🔄 Move history and undo option (coming soon)  
+🔄 AI opponent (coming soon)   
