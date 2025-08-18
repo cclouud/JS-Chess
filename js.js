@@ -48,6 +48,7 @@ let remainingSeconds = 120
 let timerElems = { white: null, black: null }
 let capturedElems = { white: null, black: null }
 let endTurnBtn = null
+let endTurnBtnMobile = null
 let isPromoting = false
 let gameOver = false
 
@@ -58,6 +59,7 @@ function initGame() {
     const cw = document.getElementById('captured-by-white')
     const cb = document.getElementById('captured-by-black')
     const btn = document.getElementById('end-turn')
+    const btnm = document.getElementById('end-turn-mobile')
 
     if (tw) timerElems.white = tw
     if (tb) timerElems.black = tb
@@ -66,6 +68,13 @@ function initGame() {
     if (btn) {
         endTurnBtn = btn
         endTurnBtn.addEventListener('click', () => {
+            clearSelection()
+            switchTurn()
+        })
+    }
+    if (btnm) {
+        endTurnBtnMobile = btnm
+        endTurnBtnMobile.addEventListener('click', () => {
             clearSelection()
             switchTurn()
         })
@@ -88,6 +97,7 @@ function startTurn(color) {
         }
     }, 1000)
     if (endTurnBtn) endTurnBtn.disabled = false
+    if (endTurnBtnMobile) endTurnBtnMobile.disabled = false
 }
 
 function formatTime(totalSeconds) {
@@ -134,6 +144,7 @@ function endGame(winnerColor) {
     if (timerInterval) clearInterval(timerInterval)
     gameOver = true
     if (endTurnBtn) endTurnBtn.disabled = true
+    if (endTurnBtnMobile) endTurnBtnMobile.disabled = true
     alert(`Ganan ${winnerColor === 'white' ? 'blancas' : 'negras'}`)
 }
 
