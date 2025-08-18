@@ -280,7 +280,7 @@ function handleCellClick(event) {
     if (selectedPiece && targetCell.tagName === "DIV") {
         const sourceCell = selectedCell;
 
-        if (isValidMove(sourceCell, targetCell)) {
+        if (isMoveLegalRespectingCheck(sourceCell, targetCell, currentTurn)) {
             const targetImg = targetCell.querySelector('img')
             if (targetImg) {
                 const info = getPieceInfo(targetImg)
@@ -310,11 +310,15 @@ function handleCellClick(event) {
                         if (newImg) newImg.addEventListener('click', handlePieceClick)
                     }
                     clearSelection()
-                    switchTurn()
+                    if (!evaluateGameStateAfterMove(movedInfo.color)) {
+                        switchTurn()
+                    }
                 })
             } else {
                 clearSelection()
-                switchTurn()
+                if (!evaluateGameStateAfterMove(movedInfo.color)) {
+                    switchTurn()
+                }
             }
         }
 
@@ -491,6 +495,82 @@ function isValidMove(startCell, targetCell) {
     return isValid;
 }
 
+// ================== Reglas de jaque/jaque mate ==================
+function getKingCell(color) {
+    const cells = getAllCells()
+    for (const cell of cells) {
+        const img = cell.querySelector('img')
+        if (!img) continue
+        const info = getPieceInfo(img)
+        if (info.type === 'King' && info.color === color) return cell
+    }
+    return null
+}
+
+function isKingInCheck(color) {
+    const kingCell = getKingCell(color)
+    if (!kingCell) return true
+    const opponent = color === 'white' ? 'black' : 'white'
+    const cells = getAllCells()
+    for (const from of cells) {
+        const img = from.querySelector('img')
+        if (!img) continue
+        const info = getPieceInfo(img)
+        if (info.color !== opponent) continue
+        if (isValidMoveForPiece(from, kingCell, info)) return true
+    }
+    return false
+}
+
+function simulateMoveOnDOM(sourceCell, targetCell, fn) {
+    const movingImg = sourceCell.querySelector('img')
+    if (!movingImg) return fn()
+    const capturedImg = targetCell.querySelector('img')
+    if (capturedImg) targetCell.removeChild(capturedImg)
+    targetCell.appendChild(movingImg)
+    let result
+    try {
+        result = fn()
+    } finally {
+        sourceCell.appendChild(movingImg)
+        if (capturedImg) targetCell.appendChild(capturedImg)
+    }
+    return result
+}
+
+function isMoveLegalRespectingCheck(sourceCell, targetCell, movingColor) {
+    const movingImg = sourceCell.querySelector('img')
+    if (!movingImg) return false
+    const info = getPieceInfo(movingImg)
+    if (info.color !== movingColor) return false
+    if (!isValidMoveForPiece(sourceCell, targetCell, info)) return false
+    return !simulateMoveOnDOM(sourceCell, targetCell, () => isKingInCheck(movingColor))
+}
+
+function hasAnyLegalMove(color) {
+    const cells = getAllCells()
+    for (const from of cells) {
+        const img = from.querySelector('img')
+        if (!img) continue
+        const info = getPieceInfo(img)
+        if (info.color !== color) continue
+        for (const to of cells) {
+            if (to === from) continue
+            if (isMoveLegalRespectingCheck(from, to, color)) return true
+        }
+    }
+    return false
+}
+
+function evaluateGameStateAfterMove(movingColor) {
+    const opponent = movingColor === 'white' ? 'black' : 'white'
+    if (isKingInCheck(opponent) && !hasAnyLegalMove(opponent)) {
+        endGame(movingColor)
+        return true
+    }
+    return false
+}
+
 // =============== IA (negras) ===============
 function isValidMoveForPiece(startCell, targetCell, pieceInfo) {
     const start = getPosition(startCell)
@@ -560,7 +640,7 @@ function getLegalMovesForColor(color) {
         if (info.color !== color) continue
         for (const target of cells) {
             if (target === cell) continue
-            if (!isValidMoveForPiece(cell, target, info)) continue
+            if (!isMoveLegalRespectingCheck(cell, target, color)) continue
             const targetImg = target.querySelector('img')
             const capVal = targetImg ? pieceCaptureValue(getPieceInfo(targetImg).type) : 0
             moves.push({ fromCell: cell, toCell: target, captureValue: capVal })
@@ -614,7 +694,9 @@ function executeAIMove(move) {
     }
 
     clearSelection()
-    switchTurn()
+    if (!evaluateGameStateAfterMove(aiColor)) {
+        switchTurn()
+    }
 }
 
 function scheduleAIMove() {
