@@ -47,8 +47,8 @@ let timerInterval = null
 let remainingSeconds = 120
 let timerElems = { white: null, black: null }
 let capturedElems = { white: null, black: null }
-let endTurnBtn = null
-let endTurnBtnMobile = null
+let endTurnBtnWhite = null
+let endTurnBtnBlack = null
 let isPromoting = false
 let gameOver = false
 let aiEnabled = false
@@ -61,24 +61,24 @@ function initGame() {
     const tb = document.getElementById('timer-black')
     const cw = document.getElementById('captured-by-white')
     const cb = document.getElementById('captured-by-black')
-    const btn = document.getElementById('end-turn')
-    const btnm = document.getElementById('end-turn-mobile')
+    const btnW = document.getElementById('end-turn-white')
+    const btnB = document.getElementById('end-turn-black')
     const toggleAi = document.getElementById('toggle-ai')
 
     if (tw) timerElems.white = tw
     if (tb) timerElems.black = tb
     if (cw) capturedElems.white = cw
     if (cb) capturedElems.black = cb
-    if (btn) {
-        endTurnBtn = btn
-        endTurnBtn.addEventListener('click', () => {
+    if (btnW) {
+        endTurnBtnWhite = btnW
+        endTurnBtnWhite.addEventListener('click', () => {
             clearSelection()
             switchTurn()
         })
     }
-    if (btnm) {
-        endTurnBtnMobile = btnm
-        endTurnBtnMobile.addEventListener('click', () => {
+    if (btnB) {
+        endTurnBtnBlack = btnB
+        endTurnBtnBlack.addEventListener('click', () => {
             clearSelection()
             switchTurn()
         })
@@ -109,8 +109,7 @@ function startTurn(color) {
             switchTurn()
         }
     }, 1000)
-    if (endTurnBtn) endTurnBtn.disabled = false
-    if (endTurnBtnMobile) endTurnBtnMobile.disabled = false
+    updateTurnButtonsState()
 
     if (aiEnabled && currentTurn === aiColor && !gameOver && !isPromoting) {
         scheduleAIMove()
@@ -127,11 +126,16 @@ function updateTimersDisplay() {
     if (!timerElems.white || !timerElems.black) return
     if (currentTurn === 'white') {
         timerElems.white.textContent = formatTime(remainingSeconds)
-        timerElems.black.textContent = '02:00'
+        timerElems.white.classList.remove('hidden')
+        timerElems.black.classList.add('hidden')
+        timerElems.black.textContent = ''
     } else {
         timerElems.black.textContent = formatTime(remainingSeconds)
-        timerElems.white.textContent = '02:00'
+        timerElems.black.classList.remove('hidden')
+        timerElems.white.classList.add('hidden')
+        timerElems.white.textContent = ''
     }
+    updateTurnButtonsState()
 }
 
 function switchTurn() {
@@ -150,6 +154,24 @@ function clearSelection() {
     selectedCell = null
 }
 
+function updateTurnButtonsState() {
+    const progressActive = Math.max(0, Math.min(1, (120 - remainingSeconds) / 120))
+    if (endTurnBtnWhite) {
+        const isActive = currentTurn === 'white'
+        endTurnBtnWhite.disabled = !isActive
+        endTurnBtnWhite.classList.toggle('active', isActive)
+        endTurnBtnWhite.style.setProperty('--progress', isActive ? progressActive : 0)
+        endTurnBtnWhite.textContent = isActive ? `Terminar turno (${formatTime(remainingSeconds)})` : 'Terminar turno'
+    }
+    if (endTurnBtnBlack) {
+        const isActive = currentTurn === 'black'
+        endTurnBtnBlack.disabled = !isActive
+        endTurnBtnBlack.classList.toggle('active', isActive)
+        endTurnBtnBlack.style.setProperty('--progress', isActive ? progressActive : 0)
+        endTurnBtnBlack.textContent = isActive ? `Terminar turno (${formatTime(remainingSeconds)})` : 'Terminar turno'
+    }
+}
+
 function addCapturedPiece(imgElem, byColor) {
     const clone = imgElem.cloneNode(false)
     clone.removeAttribute('draggable')
@@ -160,8 +182,8 @@ function addCapturedPiece(imgElem, byColor) {
 function endGame(winnerColor) {
     if (timerInterval) clearInterval(timerInterval)
     gameOver = true
-    if (endTurnBtn) endTurnBtn.disabled = true
-    if (endTurnBtnMobile) endTurnBtnMobile.disabled = true
+    if (endTurnBtnWhite) endTurnBtnWhite.disabled = true
+    if (endTurnBtnBlack) endTurnBtnBlack.disabled = true
     alert(`Ganan ${winnerColor === 'white' ? 'blancas' : 'negras'}`)
 }
 
