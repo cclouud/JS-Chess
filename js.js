@@ -161,14 +161,14 @@ function updateTurnButtonsState() {
         endTurnBtnWhite.disabled = !isActive
         endTurnBtnWhite.classList.toggle('active', isActive)
         endTurnBtnWhite.style.setProperty('--progress', isActive ? progressActive : 0)
-        endTurnBtnWhite.textContent = isActive ? `Terminar turno (${formatTime(remainingSeconds)})` : 'Terminar turno'
+        endTurnBtnWhite.textContent = isActive ? `End Turn (${formatTime(remainingSeconds)})` : 'End Turn'
     }
     if (endTurnBtnBlack) {
         const isActive = currentTurn === 'black'
         endTurnBtnBlack.disabled = !isActive
         endTurnBtnBlack.classList.toggle('active', isActive)
         endTurnBtnBlack.style.setProperty('--progress', isActive ? progressActive : 0)
-        endTurnBtnBlack.textContent = isActive ? `Terminar turno (${formatTime(remainingSeconds)})` : 'Terminar turno'
+        endTurnBtnBlack.textContent = isActive ? `End Turn (${formatTime(remainingSeconds)})` : 'End Turn'
     }
 }
 

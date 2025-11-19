@@ -1,6 +1,6 @@
 /* Mobile-first redesign */
 :root {
-    --bg: #0e0f16;
+    --bg: #414568;
     --surface: #141624;
     --surface-2: #1b1e2f;
     --text: #e6e8ef;
@@ -8,7 +8,7 @@
     --primary: #6d9eff;
     --accent: #ffcc66;
     --square-light: #ccd6f6;
-    --square-dark: #2b2f48;
+    --square-dark: #434860;
     --ring: rgba(109, 158, 255, 0.35);
     --radius: 12px;
     --shadow: 0 8px 24px rgba(0,0,0,0.35);
@@ -18,9 +18,7 @@
 
 body {
     margin: 0;
-    background: radial-gradient(1200px 600px at 20% -10%, #182038 0%, var(--bg) 45%),
-                radial-gradient(1000px 500px at 120% 10%, #1a1530 0%, transparent 45%),
-                var(--bg);
+    background: var(--bg);
     color: var(--text);
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif;
     line-height: 1.4;
